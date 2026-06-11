@@ -7,7 +7,7 @@ import { BsGraphUp, BsPeopleFill } from 'react-icons/bs';
 import { FiDownload, FiGrid } from 'react-icons/fi';
 import trainingBg from '../assets/training.png';
 
-import { publicApi } from '../utils/api.js';
+import { publicApi, adminApi } from '../utils/api.js';
 
 // Scroll to course/template card when navigated via navbar hash link
 function useHashScroll() {
@@ -36,35 +36,45 @@ export default function Training({ courses, templates = [], setEnrollments, setP
     const [videoPlaying, setVideoPlaying] = useState(false);
     const YT_ID = 'XJ5ypnHE2P0';
 
-    // Quiz state — kept for future use
-    const [quizCourse, setQuizCourse] = useState(null);
-    const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-    const [selectedAnswers, setSelectedAnswers] = useState({});
-    const [quizScore, setQuizScore] = useState(null);
-    const [showCertificate, setShowCertificate] = useState(false);
+    // Assignments state
+    const [assignStep, setAssignStep] = useState('email'); // 'email' | 'otp' | 'results'
+    const [assignEmail, setAssignEmail] = useState('');
+    const [assignOtp, setAssignOtp] = useState('');
+    const [assignLoading, setAssignLoading] = useState(false);
+    const [assignCooldown, setAssignCooldown] = useState(0);
+    const [myAssignments, setMyAssignments] = useState([]);
+    const [assignError, setAssignError] = useState('');
 
-    const startQuiz = (course) => {
-        setQuizCourse(course);
-        setCurrentQuestionIdx(0);
-        setSelectedAnswers({});
-        setQuizScore(null);
-        setShowCertificate(false);
+    const handleAssignEmailSubmit = async (e) => {
+        e.preventDefault();
+        setAssignLoading(true);
+        setAssignError('');
+        try {
+            await adminApi.requestAssignmentOtp(assignEmail);
+            setAssignStep('otp');
+            setAssignCooldown(60);
+            const timer = setInterval(() => {
+                setAssignCooldown(prev => { if (prev <= 1) { clearInterval(timer); return 0; } return prev - 1; });
+            }, 1000);
+        } catch (err) {
+            setAssignError(err.message || 'Failed to send OTP. Make sure you are enrolled in a course.');
+        } finally {
+            setAssignLoading(false);
+        }
     };
 
-    const selectAnswer = (ansIdx) => {
-        setSelectedAnswers(prev => ({ ...prev, [currentQuestionIdx]: ansIdx }));
-    };
-
-    const nextQuestion = () => {
-        if (currentQuestionIdx < mockQuizData[quizCourse.id].length - 1) {
-            setCurrentQuestionIdx(currentQuestionIdx + 1);
-        } else {
-            const questions = mockQuizData[quizCourse.id];
-            let correct = 0;
-            questions.forEach((q, idx) => { if (selectedAnswers[idx] === q.ans) correct++; });
-            const percent = Math.round((correct / questions.length) * 100);
-            setQuizScore(percent);
-            if (percent >= 100 && addLog) addLog('system', `Student passed ${quizCourse.title} quiz assessment with score 100%.`);
+    const handleAssignOtpSubmit = async (e) => {
+        e.preventDefault();
+        setAssignLoading(true);
+        setAssignError('');
+        try {
+            const res = await adminApi.getMyAssignments(assignEmail, assignOtp);
+            setMyAssignments(Array.isArray(res?.data) ? res.data : []);
+            setAssignStep('results');
+        } catch (err) {
+            setAssignError(err.message || 'Invalid OTP or no assignments found.');
+        } finally {
+            setAssignLoading(false);
         }
     };
 
@@ -405,8 +415,90 @@ export default function Training({ courses, templates = [], setEnrollments, setP
                     </div>
                 </div>
 
+            {/* My Assignments */}
+            <div id="assignments-section" style={{ marginBottom: '64px', marginTop: '64px' }}>
+                <div className="section-header">
+                    <h2 className="display-md">MY ASSIGNMENTS</h2>
+                    <p className="section-subtitle">Enter your enrolled email to view assignments for your courses.</p>
+                </div>
+
+                <div style={{ maxWidth: '480px', margin: '0 auto', background: 'var(--color-white)', border: '1px solid var(--color-soft-gray)', borderRadius: '12px', padding: '28px' }}>
+                    {assignStep === 'email' && (
+                        <form onSubmit={handleAssignEmailSubmit}>
+                            <div className="form-group">
+                                <label className="form-label">Your Enrolled Email</label>
+                                <input type="email" className="input-field" required placeholder="you@example.com" value={assignEmail} onChange={e => setAssignEmail(e.target.value)} />
+                            </div>
+                            {assignError && <p style={{ color: '#d93838', fontSize: '13px', marginBottom: '12px' }}>{assignError}</p>}
+                            <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={assignLoading}>
+                                {assignLoading ? 'Sending OTP...' : 'Verify Email & View Assignments'}
+                            </button>
+                        </form>
+                    )}
+
+                    {assignStep === 'otp' && (
+                        <form onSubmit={handleAssignOtpSubmit}>
+                            <p style={{ fontSize: '14px', color: 'var(--color-ink)', marginBottom: '16px', textAlign: 'center' }}>
+                                Enter the 6-digit OTP sent to <strong>{assignEmail}</strong>
+                            </p>
+                            <div className="form-group">
+                                <input type="text" className="input-field" required placeholder="123456" maxLength="6" style={{ textAlign: 'center', fontSize: '22px', letterSpacing: '8px' }} value={assignOtp} onChange={e => setAssignOtp(e.target.value)} />
+                            </div>
+                            {assignError && <p style={{ color: '#d93838', fontSize: '13px', marginBottom: '12px' }}>{assignError}</p>}
+                            <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={assignLoading}>
+                                {assignLoading ? 'Verifying...' : 'View My Assignments'}
+                            </button>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+                                <button type="button" className="btn-mini" style={{ color: assignCooldown > 0 ? 'var(--color-muted-text)' : 'var(--color-corporate-blue)' }} disabled={assignCooldown > 0 || assignLoading} onClick={handleAssignEmailSubmit}>
+                                    {assignCooldown > 0 ? `Resend in ${assignCooldown}s` : 'Resend OTP'}
+                                </button>
+                                <button type="button" className="btn-mini" style={{ color: 'var(--color-muted-text)' }} onClick={() => { setAssignStep('email'); setAssignError(''); setAssignOtp(''); }}>
+                                    Change Email
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {assignStep === 'results' && (
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <strong style={{ fontSize: '14px' }}>Assignments for {assignEmail}</strong>
+                                <button className="btn-mini" style={{ color: 'var(--color-corporate-blue)' }} onClick={() => { setAssignStep('email'); setAssignEmail(''); setAssignOtp(''); setMyAssignments([]); }}>Change Email</button>
+                            </div>
+                            {myAssignments.length === 0 ? (
+                                <p style={{ color: 'var(--color-muted-text)', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>No assignments found for your enrolled courses.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {myAssignments.map(a => (
+                                        <div key={a.id} style={{ border: '1px solid var(--color-soft-gray)', borderRadius: '8px', padding: '14px 16px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                                <strong style={{ fontSize: '14px', color: 'var(--color-ink)' }}>{a.title}</strong>
+                                                <span className="badge-blue" style={{ whiteSpace: 'nowrap', fontSize: '11px' }}>{a.course?.title || 'Course'}</span>
+                                            </div>
+                                            <p style={{ fontSize: '13px', color: 'var(--color-muted-text)', margin: '6px 0 8px', lineHeight: '1.5' }}>{a.description}</p>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                                <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--color-muted-text)' }}>
+                                                    {a.dueDate && <span>Due: <strong>{new Date(a.dueDate).toLocaleDateString('en-IN')}</strong></span>}
+                                                    <span>Max Score: <strong>{a.maxScore}</strong></span>
+                                                    <span>{a.questionCount ?? (a.questions || []).length} Questions</span>
+                                                </div>
+                                                {(a.questionCount ?? (a.questions || []).length) > 0 && (
+                                                    <button className="btn-primary" style={{ fontSize: '12px', padding: '7px 16px' }}
+                                                        onClick={() => navigate(`/assignment-test/${a.id}`, { state: { email: assignEmail, otp: assignOtp } })}>
+                                                        Take Test
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
+            </div>
 
         </>
     );

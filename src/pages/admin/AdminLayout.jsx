@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Grid, Briefcase, BookOpen, Mail, DollarSign, Activity, Menu, X, Award } from 'lucide-react';
+import { Grid, Briefcase, BookOpen, Mail, DollarSign, Activity, Menu, X, Award, ClipboardList } from 'lucide-react';
 
 import { CheckCircle } from 'lucide-react';
 // import logoImg from '../../assets/logo.png';
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/admin/inquiries', label: 'Inquiries', icon: <Mail size={16} /> },
   { to: '/admin/transactions', label: 'Transactions', icon: <DollarSign size={16} /> },
   { to: '/admin/certifications', label: 'Certifications', icon: <Award size={16} /> },
+  { to: '/admin/assignments', label: 'Assignments', icon: <ClipboardList size={16} /> },
   { to: '/admin/logs', label: 'Logs', icon: <Activity size={16} /> },
 
 ];

@@ -110,6 +110,33 @@ export default function Checkout({ triggerToast, setPayments }) {
 
   if (!course) return null;
 
+  // Show success view immediately after payment — no form, no timer needed
+  if (successData) {
+    return (
+      <div style={{ minHeight: '80vh', padding: '40px 16px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: '100%', maxWidth: '520px' }}>
+          <div style={{ background: 'var(--color-white)', border: '1px solid var(--color-soft-gray)', borderRadius: 16, padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(104,239,63,0.1)', border: '3px solid #68ef3f', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <CheckCircle size={44} color="#68ef3f" />
+            </div>
+            <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a2e', marginBottom: 8 }}>PAYMENT SUCCESSFUL! 🎉</h2>
+            <p style={{ color: 'var(--color-muted-text)', fontSize: '14px', marginBottom: 24 }}>Enrollment confirmed. Invoice sent to <strong>{successData.email}</strong></p>
+            <div style={{ background: '#f8f9fa', borderRadius: 12, padding: 20, marginBottom: 20, textAlign: 'left', borderLeft: '4px solid #023295' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div><div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: 2 }}>Name</div><div style={{ fontWeight: 600, color: '#1a1a2e' }}>{successData.name}</div></div>
+                <div><div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: 2 }}>Course</div><div style={{ fontWeight: 600, color: '#1a1a2e' }}>{successData.course}</div></div>
+                <div><div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: 2 }}>Amount Paid</div><div style={{ fontWeight: 700, color: '#023295' }}>₹{Number(successData.amount).toLocaleString('en-IN')}</div></div>
+                <div><div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: 2 }}>Invoice #</div><div style={{ fontWeight: 600, color: '#1a1a2e' }}>{successData.invoiceNumber || '—'}</div></div>
+              </div>
+              {successData.paymentId && <div style={{ fontSize: '10px', color: '#999', borderTop: '1px solid #eee', paddingTop: 8, wordBreak: 'break-all' }}>Payment ID: {successData.paymentId}</div>}
+            </div>
+            <button className="btn-primary" style={{ width: '100%' }} onClick={() => navigate('/training')}>Back to Courses</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: '80vh', padding: '40px 16px', display: 'flex', justifyContent: 'center' }}>
       <div style={{ width: '100%', maxWidth: '520px' }}>
@@ -180,30 +207,6 @@ export default function Checkout({ triggerToast, setPayments }) {
             </form>
           )}
 
-          {successData && (
-            <div style={{ marginTop: 18, borderTop: '1px solid var(--color-soft-gray)', paddingTop: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(104,239,63,0.12)', border: '2px solid #68ef3f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CheckCircle size={32} color="#68ef3f" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-ink)' }}>PAYMENT SUCCESSFUL</div>
-                  <div style={{ fontSize: 13, color: 'var(--color-muted-text)' }}>Invoice sent to {successData.email}</div>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-                <div>
-                  <div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Name</div>
-                  <div style={{ fontWeight: '600', color: '#1a1a2e' }}>{successData.name}</div>
-                </div>
-                <div>
-                  <div style={{ color: '#888', fontSize: '11px', textTransform: 'uppercase', marginBottom: '2px' }}>Course</div>
-                  <div style={{ fontWeight: '600', color: '#1a1a2e' }}>{successData.course}</div>
-                </div>
-              </div>
-              <button className="btn-primary" style={{ width: '100%' }} onClick={() => navigate('/training')}>Done</button>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -91,6 +91,7 @@ export const publicApi = {
   getTemplateById: (id) => apiFetch(`/public/templates/${id}`),
   getAssessments: () => apiFetch('/public/assessments'),
   getAssessmentDetails: (id) => apiFetch(`/public/assessments/${id}`),
+  checkEnrollment: (data) => apiFetch('/public/assessments/check-enrollment', { method: 'POST', body: JSON.stringify(data) }),
   submitInquiry: (data) => apiFetch('/public/inquiries', { method: 'POST', body: JSON.stringify(data) }),
   applyJob: (formData) => apiFetch('/public/jobs/apply', { method: 'POST', body: formData }),
   requestPurchaseOtp: (email) => apiFetch('/public/purchase/otp', { method: 'POST', body: JSON.stringify({ email }) }),
@@ -136,10 +137,11 @@ export const adminApi = {
   updateApplicationStatus: (id, status) => apiFetch(`/admin/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   deleteApplication: (id) => apiFetch(`/admin/applications/${id}`, { method: 'DELETE' }),
   getPurchases: () => apiFetch('/admin/purchases'),
+  downloadInvoice: (purchaseId) => `${API_URL}/admin/purchases/${purchaseId}/invoice`,
   getTrainees: () => apiFetch('/admin/trainees'),
   getSentCertificates: () => apiFetch('/admin/certificates'),
   sendCertificate: (purchaseId) => apiFetch(`/admin/certificates/send/${purchaseId}`, { method: 'POST' }),
-  getAuditLogs: () => apiFetch('/admin/audit-logs'),
+  getAuditLogs: (limit = 500) => apiFetch(`/admin/audit-logs?limit=${limit}`),
 
   uploadImage: (formData) => apiFetch('/admin/upload/image', { method: 'POST', body: formData }),
   uploadTemplate: async (formData) => {
@@ -155,6 +157,21 @@ export const adminApi = {
       throw err;
     }
   },
+
+  // Assignments
+  getAssignments: () => apiFetch('/admin/assignments'),
+  createAssignment: (data) => apiFetch('/admin/assignments', { method: 'POST', body: JSON.stringify(data) }),
+  updateAssignment: (id, data) => apiFetch(`/admin/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteAssignment: (id) => apiFetch(`/admin/assignments/${id}`, { method: 'DELETE' }),
+  addAssignmentQuestion: (id, data) => apiFetch(`/admin/assignments/${id}/questions`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteAssignmentQuestion: (id, qid) => apiFetch(`/admin/assignments/${id}/questions/${qid}`, { method: 'DELETE' }),
+  getAssignmentSubmissions: (id) => apiFetch(`/admin/assignments/${id}/submissions`),
+
+  // Public: assignments
+  requestAssignmentOtp: (email) => apiFetch('/public/assignments/otp', { method: 'POST', body: JSON.stringify({ email }) }),
+  getMyAssignments: (email, otp) => apiFetch(`/public/assignments?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`),
+  getAssignmentById: (id, email, otp) => apiFetch(`/public/assignments/${id}?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`),
+  submitAssignment: (id, data) => apiFetch(`/public/assignments/${id}/submit`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Assessment Management
   createCategory: (data) => apiFetch('/admin/assessments/categories', { method: 'POST', body: JSON.stringify(data) }),

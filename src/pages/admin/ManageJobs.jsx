@@ -2,6 +2,17 @@ import { useState } from 'react';
 import { X, Download, Filter } from 'lucide-react';
 import { adminApi } from '../../utils/api.js';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+const openProtectedPdf = async (url) => {
+  const auth = localStorage.getItem('itbees_auth');
+  const token = auth ? JSON.parse(auth).accessToken : null;
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) { alert('Failed to load PDF'); return; }
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+};
+
 export default function ManageJobs({ jobs, setJobs, applications, setApplications, triggerToast }) {
   const [jobSubTab, setJobSubTab] = useState('postings');
   const [jobDrawerOpen, setJobDrawerOpen] = useState(false);

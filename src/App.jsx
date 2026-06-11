@@ -69,6 +69,8 @@ import Transactions from './pages/admin/Transactions.jsx';
 import SystemLogs from './pages/admin/SystemLogs.jsx';
 import ImageToUrl from './pages/admin/ImageToUrl.jsx';
 import Certifications from './pages/admin/Certifications.jsx';
+import Assignments from './pages/admin/Assignments.jsx';
+import AssignmentTest from './pages/AssignmentTest.jsx';
 
 // Styles
 
@@ -91,7 +93,7 @@ const VALID_PATHS = ['/', '/about', '/services', '/careers', '/training', '/cont
 
 function Shell({ children, toast, courses, templates = [], authUser, onLogout }) {
   const { pathname } = useLocation();
-  const isValid = VALID_PATHS.includes(pathname) || pathname.startsWith('/admin') || pathname.startsWith('/careers/apply/') || pathname.startsWith('/training');
+  const isValid = VALID_PATHS.includes(pathname) || pathname.startsWith('/admin') || pathname.startsWith('/careers/apply/') || pathname.startsWith('/training') || pathname.startsWith('/assignment-test/');
   if (!isValid) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '48px 24px', backgroundColor: 'var(--color-navy-dark)' }}>
@@ -129,6 +131,7 @@ export default function App() {
   const [inquiries, setInquiries] = useState([]);
   const [payments, setPayments] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [logTotal, setLogTotal] = useState(0);
   const [adminLoading, setAdminLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -177,10 +180,11 @@ export default function App() {
       if (logsRes.status === 'fulfilled' && Array.isArray(logsRes.value?.data)) {
         setLogs(logsRes.value.data.map(l => ({
           id: l.id,
-          time: new Date(l.createdAt).toLocaleTimeString(),
+          time: new Date(l.createdAt).toLocaleString('en-IN'),
           type: l.action.toLowerCase(),
-          message: `${l.admin?.name || 'System'} ${l.action.toLowerCase()}d ${l.entity}`
+          message: `${l.admin?.name || 'System'} ${l.action.toLowerCase()}d ${l.entity}${l.entityId ? ` (${l.entityId.slice(0, 8)})` : ''}`
         })));
+        setLogTotal(logsRes.value.total || logsRes.value.data.length);
       }
       setAdminLoading(false);
     };
@@ -220,6 +224,7 @@ export default function App() {
               <Route path="/training/checkout" element={<Checkout triggerToast={triggerToast} setPayments={setPayments} />} />
               <Route path="/training/template-checkout" element={<TemplateCheckout triggerToast={triggerToast} setPayments={setPayments} />} />
               <Route path="/training/order-confirmation" element={<OrderConfirmation />} />
+              <Route path="/assignment-test/:id" element={<AssignmentTest />} />
               <Route path="/contact" element={<ContactUs setInquiries={setInquiries} triggerToast={triggerToast} />} />
               <Route path="/login" element={<AuthPage setAuthUser={setAuthUser} />} />
               <Route path="/admin" element={
@@ -233,7 +238,8 @@ export default function App() {
                 <Route path="inquiries" element={<Inquiries inquiries={inquiries} setInquiries={setInquiries} triggerToast={triggerToast} />} />
                 <Route path="transactions" element={<Transactions payments={payments} />} />
                 <Route path="certifications" element={<Certifications />} />
-                <Route path="logs" element={<SystemLogs logs={logs} />} />
+                <Route path="assignments" element={<Assignments courses={courses} triggerToast={triggerToast} />} />
+                <Route path="logs" element={<SystemLogs logs={logs} logTotal={logTotal} />} />
 
                 <Route path="templates" element={<ManageTemplates templates={templates} setTemplates={setTemplates} triggerToast={triggerToast} />} />
                 <Route path="image-url" element={<ImageToUrl />} />

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Grid, Briefcase, BookOpen, Mail, Users, DollarSign, Activity, X, Download } from 'lucide-react';
 import { MdVerified } from 'react-icons/md';
 import { FaClock, FaStar } from 'react-icons/fa';
@@ -6,8 +6,18 @@ import { BsPeopleFill } from 'react-icons/bs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 import { adminApi } from '../utils/api.js';
+
+const openProtectedPdf = async (url) => {
+  const auth = localStorage.getItem('itbees_auth');
+  const token = auth ? JSON.parse(auth).accessToken : null;
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) { alert('Failed to load PDF'); return; }
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+};
 
 export default function AdminPanel({
     jobs = [], setJobs,
@@ -486,7 +496,7 @@ export default function AdminPanel({
                                                 <td>{app.job?.title}</td>
                                                 <td>{app.experience}</td>
                                                 <td>
-                                                    <a href={`${BASE_URL}/uploads/resumes/${app.resumePath}`} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-corporate-blue)', fontSize: '12px' }}>
+                                                    <a href={app.resumePath} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-corporate-blue)', fontSize: '12px' }}>
                                                         <Download size={12} /> View
                                                     </a>
                                                 </td>
@@ -747,9 +757,9 @@ export default function AdminPanel({
                                         <td><span className={`status-badge status-${pay.status.toLowerCase()}`}>{pay.status}</span></td>
                                         <td>
                                             {pay.invoice && (
-                                                <a href={`${BASE_URL}/uploads/invoices/${pay.invoice.filePath}`} target="_blank" rel="noreferrer" style={{ color: 'var(--color-corporate-blue)', fontSize: '12px' }}>
+                                                <button onClick={() => openProtectedPdf(`${API_URL}/admin/purchases/${pay.id}/invoice`)} style={{ color: 'var(--color-corporate-blue)', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                                                     Download
-                                                </a>
+                                                </button>
                                             )}
                                         </td>
                                     </tr>

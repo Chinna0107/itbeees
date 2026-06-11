@@ -2,6 +2,16 @@ import { useState, useMemo } from 'react';
 import { Filter, BookOpen, Download } from 'lucide-react';
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+const openProtectedPdf = async (url) => {
+  const auth = localStorage.getItem('itbees_auth');
+  const token = auth ? JSON.parse(auth).accessToken : null;
+  const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!res.ok) { alert('Failed to load PDF'); return; }
+  const blob = await res.blob();
+  window.open(URL.createObjectURL(blob), '_blank');
+};
 
 export default function Transactions({ payments }) {
   const [activeFilters, setActiveFilters] = useState({
@@ -155,10 +165,9 @@ export default function Transactions({ payments }) {
               <td><span className={`status-badge status-${pay.status.toLowerCase()}`}>{pay.status}</span></td>
               <td>
                 {pay.invoice && (
-                  <a href={`${BASE_URL}/uploads/invoices/${pay.invoice.filePath}`} target="_blank" rel="noreferrer"
-                    style={{ color: 'var(--color-sky-blue)', fontSize: '12px' }}>
+                  <button onClick={() => openProtectedPdf(`${API_URL}/admin/purchases/${pay.id}/invoice`)} style={{ color: 'var(--color-sky-blue)', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                     Download
-                  </a>
+                  </button>
                 )}
               </td>
             </tr>
