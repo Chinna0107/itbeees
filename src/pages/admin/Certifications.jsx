@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Award, Send, X, Eye, Filter, CheckCircle, AlertCircle } from 'lucide-react';
 import { adminApi } from '../../utils/api.js';
+import ceoSign from '../../assets/ceo.png';
+import trainerSign from '../../assets/trainer.png';
+import logo from '../../assets/logo.png';
 
 export default function Certifications() {
   const [trainees, setTrainees] = useState([]);
@@ -333,40 +336,68 @@ export default function Certifications() {
                   flexDirection: 'column',
                   justifyContent: 'space-between',
                   color: '#000',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
               >
-                <div>
-                  <div style={{ fontWeight: 'bold', color: '#1a3c5e', fontSize: 'min(2.5vw, 20px)', letterSpacing: '1.5px', marginBottom: '4%' }}>
-                    ITBEES GLOBAL
-                  </div>
-                  <div style={{ fontSize: 'min(4.5vw, 36px)', color: '#1a3c5e', textTransform: 'uppercase', marginBottom: '2%', fontWeight: 'bold' }}>
-                    Certificate of Completion
-                  </div>
-                  <div style={{ fontSize: 'min(2vw, 15px)', color: '#555', marginBottom: '3%', fontStyle: 'italic' }}>
-                    This is to certify that
-                  </div>
-                  <div style={{ fontSize: 'min(4vw, 32px)', color: '#d4af37', borderBottom: '2px solid #d4af37', display: 'inline-block', padding: '0 30px 4px 30px', margin: '1% 0', fontWeight: '600' }}>
-                    {previewing.name}
-                  </div>
-                  <div style={{ fontSize: 'min(2.2vw, 16px)', color: '#333', margin: '3% 0 1%' }}>
-                    has successfully completed the course
-                  </div>
-                  <div style={{ fontSize: 'min(3.2vw, 24px)', fontWeight: 'bold', color: '#1a3c5e' }}>
-                    {getCourseName(previewing)}
-                  </div>
-                </div>
+                {/* Logo Watermark */}
+                <img 
+                  src={logo} 
+                  alt="Watermark" 
+                  style={{
+                    position: 'absolute',
+                    top: '44%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '35%',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                    zIndex: 0
+                  }} 
+                />
 
-                <div>
-                  <div style={{ fontSize: 'min(1.8vw, 13px)', color: '#777', marginBottom: '5%' }}>
-                    Awarded on: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10%' }}>
-                    <div style={{ borderTop: '1px solid #444', width: '30%', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500', textAlign: 'center' }}>
-                      Authorized Signature
+                {/* Content container aligned above watermark */}
+                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#1a3c5e', fontSize: 'min(2.5vw, 20px)', letterSpacing: '1.5px', marginBottom: '4%' }}>
+                      ITBEES GLOBAL
                     </div>
-                    <div style={{ borderTop: '1px solid #444', width: '30%', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500', textAlign: 'center' }}>
-                      Course Instructor
+                    <div style={{ fontSize: 'min(4.5vw, 36px)', color: '#1a3c5e', textTransform: 'uppercase', marginBottom: '2%', fontWeight: 'bold' }}>
+                      Certificate of Completion
+                    </div>
+                    <div style={{ fontSize: 'min(2vw, 15px)', color: '#555', marginBottom: '3%', fontStyle: 'italic' }}>
+                      This is to certify that
+                    </div>
+                    <div style={{ fontSize: 'min(4vw, 32px)', color: '#d4af37', borderBottom: '2px solid #d4af37', display: 'inline-block', padding: '0 30px 4px 30px', margin: '1% 0', fontWeight: '600' }}>
+                      {previewing.name}
+                    </div>
+                    <div style={{ fontSize: 'min(2.2vw, 16px)', color: '#333', margin: '3% 0 1%' }}>
+                      has successfully completed the course
+                    </div>
+                    <div style={{ fontSize: 'min(3.2vw, 24px)', fontWeight: 'bold', color: '#1a3c5e' }}>
+                      {getCourseName(previewing)}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: 'min(1.8vw, 13px)', color: '#777', marginBottom: '5%' }}>
+                      Awarded on: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10%', alignItems: 'flex-end' }}>
+                      <div style={{ width: '30%', textAlign: 'center' }}>
+                        <img src={ceoSign} alt="CEO Signature" style={{ height: '40px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />
+                        <div style={{ borderTop: '1px solid #444', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500' }}>
+                          Authorized Signature
+                        </div>
+                      </div>
+                      <div style={{ width: '30%', textAlign: 'center' }}>
+                        <img src={trainerSign} alt="Trainer Signature" style={{ height: '40px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />
+                        <div style={{ borderTop: '1px solid #444', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500' }}>
+                          Course Instructor
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

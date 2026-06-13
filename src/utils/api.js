@@ -173,6 +173,12 @@ export const adminApi = {
   getAssignmentById: (id, email, otp) => apiFetch(`/public/assignments/${id}?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`),
   submitAssignment: (id, data) => apiFetch(`/public/assignments/${id}/submit`, { method: 'POST', body: JSON.stringify(data) }),
 
+  // External Invoices
+  getExternalInvoices: () => apiFetch('/admin/external-invoices'),
+  createExternalInvoice: (data) => apiFetch('/admin/external-invoices', { method: 'POST', body: JSON.stringify(data) }),
+  deleteExternalInvoice: (id) => apiFetch(`/admin/external-invoices/${id}`, { method: 'DELETE' }),
+  downloadExternalInvoice: (id) => `${API_URL}/admin/external-invoices/${id}/pdf`,
+
   // Assessment Management
   createCategory: (data) => apiFetch('/admin/assessments/categories', { method: 'POST', body: JSON.stringify(data) }),
   createAssessment: (data) => apiFetch('/admin/assessments', { method: 'POST', body: JSON.stringify(data) }),

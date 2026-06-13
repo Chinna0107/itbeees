@@ -70,6 +70,7 @@ import SystemLogs from './pages/admin/SystemLogs.jsx';
 import ImageToUrl from './pages/admin/ImageToUrl.jsx';
 import Certifications from './pages/admin/Certifications.jsx';
 import Assignments from './pages/admin/Assignments.jsx';
+import ExternalInvoices from './pages/admin/ExternalInvoices.jsx';
 import AssignmentTest from './pages/AssignmentTest.jsx';
 
 // Styles
@@ -239,6 +240,7 @@ export default function App() {
                 <Route path="transactions" element={<Transactions payments={payments} />} />
                 <Route path="certifications" element={<Certifications />} />
                 <Route path="assignments" element={<Assignments courses={courses} triggerToast={triggerToast} />} />
+                <Route path="external-invoices" element={<ExternalInvoices triggerToast={triggerToast} />} />
                 <Route path="logs" element={<SystemLogs logs={logs} logTotal={logTotal} />} />
 
                 <Route path="templates" element={<ManageTemplates templates={templates} setTemplates={setTemplates} triggerToast={triggerToast} />} />

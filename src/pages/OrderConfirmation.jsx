@@ -281,7 +281,7 @@ export default function OrderConfirmation() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ fontSize: '14px', fontWeight: 800, color: '#023295', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                TAX INVOICE
+                GST INVOICE
               </div>
               <div style={{ fontSize: '11px', color: '#3cb823', background: 'rgba(104,239,63,0.12)', padding: '3px 10px', borderRadius: '4px', fontWeight: 700 }}>
                 PAID
