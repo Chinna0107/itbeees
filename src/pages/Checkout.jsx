@@ -9,7 +9,7 @@ export default function Checkout({ triggerToast, setPayments }) {
   const course = location.state?.course;
 
   const [checkoutStep, setCheckoutStep] = useState('details');
-  const [userDetails, setUserDetails] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '' });
+  const [userDetails, setUserDetails] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '', country: 'india' });
   const [otpValue, setOtpValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -75,7 +75,7 @@ export default function Checkout({ triggerToast, setPayments }) {
               razorpay_signature: response.razorpay_signature,
               purchaseId: data.purchaseId
             });
-            setUserDetails({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '' });
+            setUserDetails({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '', country: 'india' });
             setOtpValue('');
             setCheckoutStep('details');
             setSuccessData(verifyRes.data);
@@ -146,7 +146,16 @@ export default function Checkout({ triggerToast, setPayments }) {
 
         <div style={{ background: 'var(--color-white)', border: '1px solid var(--color-soft-gray)', borderRadius: 12, padding: 20 }}>
           <h2 className="heading-lg">Checkout — {course.title}</h2>
-          <p style={{ color: 'var(--color-muted-text)', marginBottom: 12 }}>Price: <strong>₹{course.price.toLocaleString('en-IN')}</strong></p>
+          {userDetails.country === 'india' ? (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ color: 'var(--color-muted-text)', marginBottom: 2 }}>Price (incl. 18% GST): <strong>₹{course.price.toLocaleString('en-IN')}</strong></p>
+              <p style={{ color: 'var(--color-muted-text)', fontSize: '12px' }}>
+                Subtotal: ₹{(course.price / 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} + GST: ₹{(course.price - course.price / 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              </p>
+            </div>
+          ) : (
+            <p style={{ color: 'var(--color-muted-text)', marginBottom: 12 }}>Price: <strong>₹{course.price.toLocaleString('en-IN')}</strong></p>
+          )}
 
           {checkoutStep === 'details' ? (
             <form onSubmit={handleDetailsSubmit}>
@@ -163,6 +172,13 @@ export default function Checkout({ triggerToast, setPayments }) {
                 <input type="tel" className="input-field" required placeholder="+91 98765 43210" value={userDetails.phone} onChange={(e) => setUserDetails({ ...userDetails, phone: e.target.value })} />
               </div>
               <div className="form-group">
+                <label className="form-label">Country</label>
+                <select className="input-field" value={userDetails.country} onChange={(e) => setUserDetails({ ...userDetails, country: e.target.value, state: '', pincode: '' })}>
+                  <option value="india">India</option>
+                  <option value="other">Other Country</option>
+                </select>
+              </div>
+              <div className="form-group">
                 <label className="form-label">Address</label>
                 <input type="text" className="input-field" required placeholder="House No, Street, Area" value={userDetails.address} onChange={(e) => setUserDetails({ ...userDetails, address: e.target.value })} />
               </div>
@@ -171,15 +187,19 @@ export default function Checkout({ triggerToast, setPayments }) {
                   <label className="form-label">City</label>
                   <input type="text" className="input-field" required placeholder="Hyderabad" value={userDetails.city} onChange={(e) => setUserDetails({ ...userDetails, city: e.target.value })} />
                 </div>
+                {userDetails.country === 'india' && (
+                  <div className="form-group">
+                    <label className="form-label">State</label>
+                    <input type="text" className="input-field" required placeholder="Telangana" value={userDetails.state} onChange={(e) => setUserDetails({ ...userDetails, state: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              {userDetails.country === 'india' && (
                 <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input type="text" className="input-field" required placeholder="Telangana" value={userDetails.state} onChange={(e) => setUserDetails({ ...userDetails, state: e.target.value })} />
+                  <label className="form-label">Pincode</label>
+                  <input type="text" className="input-field" required placeholder="500032" maxLength="6" value={userDetails.pincode} onChange={(e) => setUserDetails({ ...userDetails, pincode: e.target.value })} />
                 </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Pincode</label>
-                <input type="text" className="input-field" required placeholder="500032" maxLength="6" value={userDetails.pincode} onChange={(e) => setUserDetails({ ...userDetails, pincode: e.target.value })} />
-              </div>
+              )}
               <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
                 {loading ? 'Processing...' : 'Verify Email & Proceed'}
               </button>

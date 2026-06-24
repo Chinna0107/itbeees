@@ -9,7 +9,7 @@ export default function TemplateCheckout({ triggerToast, setPayments }) {
   const template = location.state?.template;
 
   const [checkoutStep, setCheckoutStep] = useState('details');
-  const [userDetails, setUserDetails] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '' });
+  const [userDetails, setUserDetails] = useState({ name: '', email: '', phone: '', address: '', city: '', state: '', pincode: '', country: 'india' });
   const [otpValue, setOtpValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -127,7 +127,16 @@ export default function TemplateCheckout({ triggerToast, setPayments }) {
             </div>
           </div>
           <p style={{ color: 'var(--color-muted-text)', marginBottom: 12 }}>
-            Price: <strong style={{ fontSize: '18px', color: 'var(--color-ink)' }}>₹{template.price.toLocaleString('en-IN')}</strong>
+            {userDetails.country === 'india' ? (
+              <>
+                Price (incl. 18% GST): <strong style={{ fontSize: '18px', color: 'var(--color-ink)' }}>₹{template.price.toLocaleString('en-IN')}</strong>
+                <span style={{ display: 'block', fontSize: '12px', marginTop: 2 }}>
+                  Subtotal: ₹{(template.price / 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })} + GST: ₹{(template.price - template.price / 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </span>
+              </>
+            ) : (
+              <>Price: <strong style={{ fontSize: '18px', color: 'var(--color-ink)' }}>₹{template.price.toLocaleString('en-IN')}</strong></>
+            )}
           </p>
           {template.features && Array.isArray(template.features) && (
             <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--color-light-canvas)', borderRadius: '8px' }}>
@@ -155,6 +164,13 @@ export default function TemplateCheckout({ triggerToast, setPayments }) {
                 <input type="tel" className="input-field" required placeholder="+91 98765 43210" value={userDetails.phone} onChange={(e) => setUserDetails({ ...userDetails, phone: e.target.value })} />
               </div>
               <div className="form-group">
+                <label className="form-label">Country</label>
+                <select className="input-field" value={userDetails.country} onChange={(e) => setUserDetails({ ...userDetails, country: e.target.value, state: '', pincode: '' })}>
+                  <option value="india">India</option>
+                  <option value="other">Other Country</option>
+                </select>
+              </div>
+              <div className="form-group">
                 <label className="form-label">Address</label>
                 <input type="text" className="input-field" required placeholder="House No, Street, Area" value={userDetails.address} onChange={(e) => setUserDetails({ ...userDetails, address: e.target.value })} />
               </div>
@@ -163,15 +179,19 @@ export default function TemplateCheckout({ triggerToast, setPayments }) {
                   <label className="form-label">City</label>
                   <input type="text" className="input-field" required placeholder="Hyderabad" value={userDetails.city} onChange={(e) => setUserDetails({ ...userDetails, city: e.target.value })} />
                 </div>
+                {userDetails.country === 'india' && (
+                  <div className="form-group">
+                    <label className="form-label">State</label>
+                    <input type="text" className="input-field" required placeholder="Telangana" value={userDetails.state} onChange={(e) => setUserDetails({ ...userDetails, state: e.target.value })} />
+                  </div>
+                )}
+              </div>
+              {userDetails.country === 'india' && (
                 <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input type="text" className="input-field" required placeholder="Telangana" value={userDetails.state} onChange={(e) => setUserDetails({ ...userDetails, state: e.target.value })} />
+                  <label className="form-label">Pincode</label>
+                  <input type="text" className="input-field" required placeholder="500032" maxLength="6" value={userDetails.pincode} onChange={(e) => setUserDetails({ ...userDetails, pincode: e.target.value })} />
                 </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Pincode</label>
-                <input type="text" className="input-field" required placeholder="500032" maxLength="6" value={userDetails.pincode} onChange={(e) => setUserDetails({ ...userDetails, pincode: e.target.value })} />
-              </div>
+              )}
               <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={loading}>
                 {loading ? 'Processing...' : 'Verify Email & Proceed'}
               </button>
