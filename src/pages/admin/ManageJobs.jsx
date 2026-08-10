@@ -1,6 +1,16 @@
 import { useState } from 'react';
-import { X, Download, Filter } from 'lucide-react';
+import { X, Download, Filter, FileDown } from 'lucide-react';
 import { adminApi } from '../../utils/api.js';
+
+const exportData = (rows, filename, type) => {
+  const header = ['Name', 'Email', 'Phone', 'Job', 'Experience', 'Location', 'Resume Link', 'Applied Date'].join(',');
+  const body = rows.map(r => [r.name, r.email, r.phone, r.job, r.experience, r.location, r.resume, r.date].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const content = [header, ...body].join('\n');
+  const bom = type === 'excel' ? '\uFEFF' : '';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `${filename}_${type}.csv`; a.click();
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -23,24 +33,38 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
   const [newJobDesc, setNewJobDesc] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const [selectedApps, setSelectedApps] = useState([]);
+
+  const toggleApp = (id) => setSelectedApps(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleAllApps = () => setSelectedApps(prev => prev.length === filteredApplications.length ? [] : filteredApplications.map(a => a.id));
+
+  const handleBulkDeleteApps = async () => {
+    if (!selectedApps.length) return;
+    if (!window.confirm(`Delete ${selectedApps.length} application(s)?`)) return;
+    try {
+      await Promise.all(selectedApps.map(id => adminApi.deleteApplication(id)));
+      setApplications(prev => prev.filter(a => !selectedApps.includes(a.id)));
+      setSelectedApps([]);
+      triggerToast(`${selectedApps.length} application(s) deleted.`);
+    } catch (err) { alert(err.message); }
+  };
+
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const [activeFilters, setActiveFilters] = useState({
-    candidate: false,
-    email: false,
-    phone: false,
-    job: false,
-    experience: false,
-    applied: false
+    candidate: false, email: false, phone: false, job: false, experience: false, applied: false
   });
   const [filterValues, setFilterValues] = useState({
-    candidate: '',
-    email: '',
-    phone: '',
-    job: '',
-    experience: '',
-    applied: ''
+    candidate: '', email: '', phone: '', job: '', experience: '', applied: ''
   });
 
   const filteredApplications = applications.filter(app => {
+    if (dateFrom || dateTo) {
+      const d = new Date(app.createdAt);
+      if (dateFrom && d < new Date(dateFrom)) return false;
+      if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+    }
     if (filterValues.candidate) {
       const val = filterValues.candidate.toLowerCase();
       if (!app.name?.toLowerCase().includes(val)) return false;
@@ -255,12 +279,40 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
         </div>
       )}
 
-      {/* Applicants Table */}
       {jobSubTab === 'applicants' && (
+        <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>From</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>To</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ fontSize: '11px', color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            {selectedApps.length > 0 && (
+              <button onClick={handleBulkDeleteApps}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,107,107,0.4)', background: 'rgba(255,107,107,0.1)', color: '#ff6b6b', fontSize: '12px', cursor: 'pointer' }}>
+                Delete ({selectedApps.length})
+              </button>
+            )}
+            <button onClick={() => exportData(filteredApplications.map(app => ({ name: app.name, email: app.email, phone: app.phone, job: app.job?.title || '', experience: app.experience || '', location: app.location || '', resume: app.resumePath || '', date: new Date(app.createdAt).toLocaleDateString('en-IN') })), 'applicants', 'csv')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> CSV
+            </button>
+            <button onClick={() => exportData(filteredApplications.map(app => ({ name: app.name, email: app.email, phone: app.phone, job: app.job?.title || '', experience: app.experience || '', location: app.location || '', resume: app.resumePath || '', date: new Date(app.createdAt).toLocaleDateString('en-IN') })), 'applicants', 'excel')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(104,239,63,0.4)', background: 'rgba(104,239,63,0.08)', color: 'var(--color-ai-lime)', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> Excel
+            </button>
+          </div>
+        </div>
         <div className="admin-table-container">
           <table className="admin-table">
             <thead>
               <tr>
+                <th style={{ width: '36px' }}>
+                  <input type="checkbox" checked={selectedApps.length === filteredApplications.length && filteredApplications.length > 0} onChange={toggleAllApps} />
+                </th>
                 {renderFilterHeader('candidate', 'Candidate', 'Filter Candidate...')}
                 {renderFilterHeader('email', 'Email', 'Filter Email...')}
                 {renderFilterHeader('phone', 'Phone', 'Filter Phone...')}
@@ -274,6 +326,7 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
             <tbody>
               {filteredApplications.map(app => (
                 <tr key={app.id}>
+                  <td><input type="checkbox" checked={selectedApps.includes(app.id)} onChange={() => toggleApp(app.id)} /></td>
                   <td><strong>{app.name}</strong><br /><span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{app.location}</span></td>
                   <td>{app.email}</td>
                   <td>{app.phone}</td>
@@ -289,10 +342,11 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
                   <td><button className="btn-mini" style={{ color: '#ff6b6b' }} onClick={() => handleDeleteApp(app.id)}>Delete</button></td>
                 </tr>
               ))}
-              {filteredApplications.length === 0 && <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No applications yet.</td></tr>}
+              {filteredApplications.length === 0 && <tr><td colSpan="9" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No applications yet.</td></tr>}
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Add/Edit Job Modal */}

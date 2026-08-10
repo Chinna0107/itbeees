@@ -1,6 +1,16 @@
 import { useState } from 'react';
-import { X, FileText, Download, Filter } from 'lucide-react';
+import { X, FileText, Download, Filter, FileDown } from 'lucide-react';
 import { adminApi } from '../../utils/api.js';
+
+const exportData = (rows, filename, type) => {
+  const header = ['Customer', 'Email', 'Template', 'Category', 'Amount', 'Status', 'Date'].join(',');
+  const body = rows.map(r => [r.customer, r.email, r.template, r.category, r.amount, r.status, r.date].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const content = [header, ...body].join('\n');
+  const bom = type === 'excel' ? '\uFEFF' : '';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `${filename}_${type}.csv`; a.click();
+};
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -32,22 +42,38 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
   const [purchases, setPurchases] = useState([]);
   const [purchasesLoading, setPurchasesLoading] = useState(false);
 
+  const [selectedPurchases, setSelectedPurchases] = useState([]);
+
+  const togglePurchase = (id) => setSelectedPurchases(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleAllPurchases = () => setSelectedPurchases(prev => prev.length === filteredPurchases.length ? [] : filteredPurchases.map(p => p.id));
+
+  const handleBulkDeletePurchases = async () => {
+    if (!selectedPurchases.length) return;
+    if (!window.confirm(`Delete ${selectedPurchases.length} purchase record(s)?`)) return;
+    try {
+      await Promise.all(selectedPurchases.map(id => adminApi.deletePurchase(id)));
+      setPurchases(prev => prev.filter(p => !selectedPurchases.includes(p.id)));
+      setSelectedPurchases([]);
+      triggerToast(`${selectedPurchases.length} purchase(s) deleted.`);
+    } catch (err) { alert(err.message); }
+  };
+
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const [activeFilters, setActiveFilters] = useState({
-    customer: false,
-    template: false,
-    amount: false,
-    date: false,
-    status: false
+    customer: false, template: false, amount: false, date: false, status: false
   });
   const [filterValues, setFilterValues] = useState({
-    customer: '',
-    template: '',
-    amount: '',
-    date: '',
-    status: ''
+    customer: '', template: '', amount: '', date: '', status: ''
   });
 
   const filteredPurchases = purchases.filter(p => {
+    if (dateFrom || dateTo) {
+      const d = new Date(p.createdAt);
+      if (dateFrom && d < new Date(dateFrom)) return false;
+      if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+    }
     if (filterValues.customer) {
       const val = filterValues.customer.toLowerCase();
       if (!p.name?.toLowerCase().includes(val) && !p.email?.toLowerCase().includes(val)) return false;
@@ -353,8 +379,33 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
         </div>
       )}
 
-      {/* Template Purchases Table */}
       {activeTab === 'purchases' && (
+        <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>From</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>To</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ fontSize: '11px', color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            {selectedPurchases.length > 0 && (
+              <button onClick={handleBulkDeletePurchases}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,107,107,0.4)', background: 'rgba(255,107,107,0.1)', color: '#ff6b6b', fontSize: '12px', cursor: 'pointer' }}>
+                Delete ({selectedPurchases.length})
+              </button>
+            )}
+            <button onClick={() => exportData(filteredPurchases.map(p => ({ customer: p.name, email: p.email, template: p.template?.name || '', category: p.template?.category || '', amount: p.amount, status: p.status, date: new Date(p.createdAt).toLocaleDateString('en-IN') })), 'template_purchases', 'csv')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> CSV
+            </button>
+            <button onClick={() => exportData(filteredPurchases.map(p => ({ customer: p.name, email: p.email, template: p.template?.name || '', category: p.template?.category || '', amount: p.amount, status: p.status, date: new Date(p.createdAt).toLocaleDateString('en-IN') })), 'template_purchases', 'excel')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(104,239,63,0.4)', background: 'rgba(104,239,63,0.08)', color: 'var(--color-ai-lime)', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> Excel
+            </button>
+          </div>
+        </div>
         <div className="admin-table-container">
           {purchasesLoading && (
             <div style={{ textAlign: 'center', padding: '24px', color: 'rgba(255,255,255,0.5)' }}>Loading purchases...</div>
@@ -363,8 +414,10 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
             <table className="admin-table">
               <thead>
                 <tr>
-                  {renderFilterHeader('customer', 'Customer', 'Filter Customer...')}
-                  {renderFilterHeader('template', 'Template', 'Filter Template...')}
+                  <th style={{ width: '36px' }}>
+                    <input type="checkbox" checked={selectedPurchases.length === filteredPurchases.length && filteredPurchases.length > 0} onChange={toggleAllPurchases} />
+                  </th>
+                  {renderFilterHeader('customer', 'Customer', 'Filter Customer...')}                  {renderFilterHeader('template', 'Template', 'Filter Template...')}
                   {renderFilterHeader('amount', 'Amount', 'Filter Amount...')}
                   {renderFilterHeader('date', 'Date', 'Filter Date...')}
                   {renderFilterHeader('status', 'Status', 'Filter Status...')}
@@ -374,6 +427,7 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
               <tbody>
                 {filteredPurchases.map(p => (
                   <tr key={p.id}>
+                    <td><input type="checkbox" checked={selectedPurchases.includes(p.id)} onChange={() => togglePurchase(p.id)} /></td>
                     <td>
                       <strong>{p.name}</strong><br />
                       <span style={{ fontSize: '11px', color: '#aaa' }}>{p.email}</span>
@@ -399,7 +453,7 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
                 ))}
                 {filteredPurchases.length === 0 && (
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
                       No template purchases found.
                     </td>
                   </tr>
@@ -408,6 +462,7 @@ export default function ManageTemplates({ templates, setTemplates, triggerToast 
             </table>
           )}
         </div>
+        </>
       )}
 
       {drawerOpen && (

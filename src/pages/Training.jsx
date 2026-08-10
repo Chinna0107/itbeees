@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, X, CheckCircle, Play } from 'lucide-react';
+import { BookOpen, X, CheckCircle, Play, Share2, Link2, Mail } from 'lucide-react';
+import { FaWhatsapp, FaLinkedinIn, FaXTwitter } from 'react-icons/fa6';
 import { FaGraduationCap, FaCertificate, FaUsers, FaClock, FaStar, FaPlayCircle, FaChalkboardTeacher, FaLaptopCode, FaAward, FaRocket } from 'react-icons/fa';
 import { MdOutlineQuiz, MdVerified, MdSchool } from 'react-icons/md';
 import { BsGraphUp, BsPeopleFill } from 'react-icons/bs';
@@ -28,6 +29,50 @@ function useHashScroll() {
         };
         tryScroll();
     }, []);
+}
+
+function SharePopover({ url, title }) {
+    const [open, setOpen] = useState(false);
+    const encoded = encodeURIComponent(url);
+    const text = encodeURIComponent(title);
+    const options = [
+        { label: 'WhatsApp', icon: <FaWhatsapp size={15} />, color: '#25D366', href: `https://wa.me/?text=${text}%20${encoded}` },
+        { label: 'LinkedIn', icon: <FaLinkedinIn size={15} />, color: '#0A66C2', href: `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}` },
+        { label: 'Twitter / X', icon: <FaXTwitter size={15} />, color: '#000', href: `https://twitter.com/intent/tweet?url=${encoded}&text=${text}` },
+        { label: 'Email', icon: <Mail size={15} />, color: '#e05c5c', href: `mailto:?subject=${text}&body=${encoded}` },
+    ];
+    return (
+        <div style={{ position: 'relative' }}>
+            <button title="Share" onClick={() => setOpen(o => !o)}
+                style={{ background: 'none', border: '1px solid var(--color-soft-gray)', borderRadius: '6px', padding: '7px 9px', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-muted-text)' }}>
+                <Share2 size={14} />
+            </button>
+            {open && (
+                <>
+                    <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 99 }} />
+                    <div style={{ position: 'absolute', bottom: '110%', right: 0, zIndex: 100, background: 'var(--color-white)', border: '1px solid var(--color-soft-gray)', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '8px', minWidth: '160px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {options.map(o => (
+                            <a key={o.label} href={o.href} target="_blank" rel="noopener noreferrer"
+                                onClick={() => setOpen(false)}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', fontSize: '13px', color: 'var(--color-ink)', textDecoration: 'none', transition: 'background 0.15s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-light-canvas)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                                <span style={{ color: o.color }}>{o.icon}</span>{o.label}
+                            </a>
+                        ))}
+                        <div style={{ borderTop: '1px solid var(--color-soft-gray)', marginTop: '4px', paddingTop: '4px' }}>
+                            <button onClick={() => { navigator.clipboard.writeText(url); triggerToast && triggerToast('Link copied!', 'success'); setOpen(false); }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', fontSize: '13px', color: 'var(--color-ink)', background: 'none', border: 'none', cursor: 'pointer', width: '100%' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--color-light-canvas)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                                <span style={{ color: 'var(--color-corporate-blue)' }}><Link2 size={15} /></span>Copy Link
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
 }
 
 export default function Training({ courses, templates = [], setEnrollments, setPayments, triggerToast, addLog }) {
@@ -146,7 +191,8 @@ export default function Training({ courses, templates = [], setEnrollments, setP
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-soft-gray)', paddingTop: '16px', gap: '8px', flexWrap: 'wrap' }}>
                                     <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-ink)' }}>₹{course.price.toLocaleString('en-IN')}</div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                        <SharePopover url={`${window.location.origin}/training#course-${course.id}`} title={course.title} />
                                         <button className="btn-primary" style={{ padding: '8px 12px', fontSize: '12px' }} onClick={() => navigate('/training/checkout', { state: { course } })}>
                                             Enroll Now
                                         </button>
@@ -316,9 +362,12 @@ export default function Training({ courses, templates = [], setEnrollments, setP
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-soft-gray)', paddingTop: '16px', gap: '8px', flexWrap: 'wrap' }}>
                                                 <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--color-ink)' }}>₹{template.price.toLocaleString('en-IN')}</div>
-                                                <button className="btn-primary" style={{ padding: '8px 12px', fontSize: '12px' }} onClick={() => navigate('/training/template-checkout', { state: { template } })}>
-                                                    Buy Now
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <SharePopover url={`${window.location.origin}/training#template-${template.id}`} title={template.name} />
+                                                    <button className="btn-primary" style={{ padding: '8px 12px', fontSize: '12px' }} onClick={() => navigate('/training/template-checkout', { state: { template } })}>
+                                                        Buy Now
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

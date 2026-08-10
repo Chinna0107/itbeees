@@ -1,6 +1,16 @@
 ﻿import { useState, useEffect } from 'react';
-import { X, BookOpen, Download, Filter } from 'lucide-react';
+import { X, BookOpen, Download, Filter, FileDown } from 'lucide-react';
 import { adminApi } from '../../utils/api.js';
+
+const exportData = (rows, filename, type) => {
+  const header = ['ID', 'Name', 'Email', 'Phone', 'Course', 'Date'].join(',');
+  const body = rows.map(r => [r.id, r.name, r.email, r.phone, r.course, r.date].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
+  const content = [header, ...body].join('\n');
+  const bom = type === 'excel' ? '\uFEFF' : '';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `${filename}_${type}.csv`; a.click();
+};
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
@@ -63,22 +73,38 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
     return `ITBE${yy}${mm}${dd}${String(seq).padStart(2, '0')}`;
   };
 
+  const [selectedTrainees, setSelectedTrainees] = useState([]);
+
+  const toggleTrainee = (id) => setSelectedTrainees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleAllTrainees = () => setSelectedTrainees(prev => prev.length === filteredTrainees.length ? [] : filteredTrainees.map(p => p.id));
+
+  const handleBulkDeleteTrainees = async () => {
+    if (!selectedTrainees.length) return;
+    if (!window.confirm(`Delete ${selectedTrainees.length} trainee record(s)?`)) return;
+    try {
+      await Promise.all(selectedTrainees.map(id => adminApi.deleteTrainee(id)));
+      setTrainees(prev => prev.filter(t => !selectedTrainees.includes(t.id)));
+      setSelectedTrainees([]);
+      triggerToast(`${selectedTrainees.length} trainee(s) deleted.`);
+    } catch (err) { alert(err.message); }
+  };
+
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
   const [activeFilters, setActiveFilters] = useState({
-    id: false,
-    trainee: false,
-    phone: false,
-    course: false,
-    date: false
+    id: false, trainee: false, phone: false, course: false, date: false
   });
   const [filterValues, setFilterValues] = useState({
-    id: '',
-    trainee: '',
-    phone: '',
-    course: '',
-    date: ''
+    id: '', trainee: '', phone: '', course: '', date: ''
   });
 
   const filteredTrainees = trainees.filter(pay => {
+    if (dateFrom || dateTo) {
+      const d = new Date(pay.createdAt || pay.purchasedAt);
+      if (dateFrom && d < new Date(dateFrom)) return false;
+      if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+    }
     if (filterValues.id) {
       const tId = getTraineeId(pay).toLowerCase();
       if (!tId.includes(filterValues.id.toLowerCase())) return false;
@@ -325,6 +351,32 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
       )}
 
       {activeTab === 'trainees' && (
+        <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>From</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>To</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px' }} />
+          {(dateFrom || dateTo) && <button onClick={() => { setDateFrom(''); setDateTo(''); }} style={{ fontSize: '11px', color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+            {selectedTrainees.length > 0 && (
+              <button onClick={handleBulkDeleteTrainees}
+                style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,107,107,0.4)', background: 'rgba(255,107,107,0.1)', color: '#ff6b6b', fontSize: '12px', cursor: 'pointer' }}>
+                Delete ({selectedTrainees.length})
+              </button>
+            )}
+            <button onClick={() => exportData(filteredTrainees.map(pay => ({ id: getTraineeId(pay), name: pay.name, email: pay.email, phone: pay.phone, course: courses.find(c => c.id === pay.courseId)?.title || 'Unknown', date: new Date(pay.createdAt || pay.purchasedAt).toLocaleDateString('en-IN') })), 'trainees', 'csv')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> CSV
+            </button>
+            <button onClick={() => exportData(filteredTrainees.map(pay => ({ id: getTraineeId(pay), name: pay.name, email: pay.email, phone: pay.phone, course: courses.find(c => c.id === pay.courseId)?.title || 'Unknown', date: new Date(pay.createdAt || pay.purchasedAt).toLocaleDateString('en-IN') })), 'trainees', 'excel')}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(104,239,63,0.4)', background: 'rgba(104,239,63,0.08)', color: 'var(--color-ai-lime)', fontSize: '12px', cursor: 'pointer' }}>
+              <FileDown size={13} /> Excel
+            </button>
+          </div>
+        </div>
         <div className="admin-table-container">
           {traineesLoading && (
             <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
@@ -343,8 +395,10 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
             <table className="admin-table">
               <thead>
                 <tr>
-                  {renderFilterHeader('id', 'ID', 'Filter ID...')}
-                  {renderFilterHeader('trainee', 'Trainee', 'Filter Trainee...')}
+                  <th style={{ width: '36px' }}>
+                    <input type="checkbox" checked={selectedTrainees.length === filteredTrainees.length && filteredTrainees.length > 0} onChange={toggleAllTrainees} />
+                  </th>
+                  {renderFilterHeader('id', 'ID', 'Filter ID...')}                  {renderFilterHeader('trainee', 'Trainee', 'Filter Trainee...')}
                   {renderFilterHeader('phone', 'Phone', 'Filter Phone...')}
                   {renderFilterHeader('course', 'Course', 'Filter Course...')}
                   {renderFilterHeader('date', 'Date', 'Filter Date...')}
@@ -353,6 +407,7 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
               <tbody>
                 {filteredTrainees.map(pay => (
                   <tr key={pay.id}>
+                    <td><input type="checkbox" checked={selectedTrainees.includes(pay.id)} onChange={() => toggleTrainee(pay.id)} /></td>
                     <td style={{ fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--color-sky-blue)' }}>
                       {getTraineeId(pay)}
                     </td>
@@ -372,7 +427,7 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
                 ))}
                 {filteredTrainees.length === 0 && (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+                    <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
                       No trainees found.
                     </td>
                   </tr>
@@ -381,6 +436,7 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
             </table>
           )}
         </div>
+        </>
       )}
 
       {drawerOpen && (

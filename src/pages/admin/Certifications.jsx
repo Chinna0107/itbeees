@@ -4,6 +4,9 @@ import { adminApi } from '../../utils/api.js';
 import ceoSign from '../../assets/ceo.png';
 import trainerSign from '../../assets/trainer.png';
 import logo from '../../assets/logo.png';
+import chartsImg from '../../assets/charts.png';
+import homeImg from '../../assets/home.png';
+import certBg from '../../assets/certbg.png';
 
 export default function Certifications() {
   const [trainees, setTrainees] = useState([]);
@@ -272,140 +275,192 @@ export default function Certifications() {
         )}
       </div>
 
-      {/* Certificate preview modal */}
-      {previewing && (
-        <div
-          onClick={() => setPreviewing(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.85)',
-            zIndex: 200,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px'
-          }}
-        >
+      {/* Certificate preview modal — ITBEES design */}
+      {previewing && (() => {
+        const courseName = getCourseName(previewing);
+        const today = new Date();
+        const completionDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+        const certId = `ITB/DA/${String(today.getFullYear())}`;
+        const courseHours = previewing.course?.hours || previewing.hours || '';
+        const courseDuration = previewing.course?.duration || previewing.duration || '';
+        const durationLabel = courseHours && courseDuration
+          ? `${courseHours} Hours / ${courseDuration}`
+          : courseHours
+            ? `${courseHours} Hours`
+            : courseDuration || '____';
+        return (
           <div
-            onClick={e => e.stopPropagation()}
+            onClick={() => setPreviewing(null)}
             style={{
-              background: '#222',
-              borderRadius: '12px',
-              maxWidth: '850px',
-              width: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              position: 'relative',
-              boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.88)',
+              zIndex: 200,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
             }}
           >
-            <button
-              onClick={() => setPreviewing(null)}
+            <div
+              onClick={e => e.stopPropagation()}
               style={{
-                position: 'absolute',
-                top: '14px',
-                right: '14px',
-                background: 'rgba(0,0,0,0.6)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '50%',
-                width: '32px',
-                height: '32px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 10
+                borderRadius: '14px',
+                maxWidth: '1050px',
+                width: '100%',
+                maxHeight: '92vh',
+                overflowY: 'auto',
+                position: 'relative',
+                boxShadow: '0 25px 60px rgba(0,0,0,0.7)'
               }}
             >
-              <X size={16} />
-            </button>
-
-            <div style={{ padding: '30px 40px' }}>
-              <div
+              {/* Close button */}
+              <button
+                onClick={() => setPreviewing(null)}
                 style={{
-                  width: '100%',
-                  aspectRatio: '1414 / 1000',
-                  border: 'min(1.5vw, 12px) solid #1a3c5e',
-                  padding: '5% 6%',
-                  background: '#fff',
-                  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-                  boxSizing: 'border-box',
+                  position: 'absolute',
+                  top: '-14px',
+                  right: '-14px',
+                  background: '#ff4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '34px',
+                  height: '34px',
+                  cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  color: '#000',
-                  textAlign: 'center',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)'
                 }}
               >
-                {/* Logo Watermark */}
-                <img 
-                  src={logo} 
-                  alt="Watermark" 
-                  style={{
-                    position: 'absolute',
-                    top: '44%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '35%',
-                    opacity: 0.1,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    zIndex: 0
-                  }} 
-                />
+                <X size={16} />
+              </button>
 
-                {/* Content container aligned above watermark */}
-                <div style={{ position: 'relative', zIndex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: '#1a3c5e', fontSize: 'min(2.5vw, 20px)', letterSpacing: '1.5px', marginBottom: '4%' }}>
-                      ITBEES GLOBAL
-                    </div>
-                    <div style={{ fontSize: 'min(4.5vw, 36px)', color: '#1a3c5e', textTransform: 'uppercase', marginBottom: '2%', fontWeight: 'bold' }}>
-                      Certificate of Completion
-                    </div>
-                    <div style={{ fontSize: 'min(2vw, 15px)', color: '#555', marginBottom: '3%', fontStyle: 'italic' }}>
-                      This is to certify that
-                    </div>
-                    <div style={{ fontSize: 'min(4vw, 32px)', color: '#d4af37', borderBottom: '2px solid #d4af37', display: 'inline-block', padding: '0 30px 4px 30px', margin: '1% 0', fontWeight: '600' }}>
-                      {previewing.name}
-                    </div>
-                    <div style={{ fontSize: 'min(2.2vw, 16px)', color: '#333', margin: '3% 0 1%' }}>
-                      has successfully completed the course
-                    </div>
-                    <div style={{ fontSize: 'min(3.2vw, 24px)', fontWeight: 'bold', color: '#1a3c5e' }}>
-                      {getCourseName(previewing)}
-                    </div>
+              {/* ─── CERTIFICATE OVERLAY (ABSOLUTE POSITIONING) ─── */}
+              <div style={{
+                position: 'relative',
+                width: '1000px',
+                height: '666.6px', // 1536x1024 aspect ratio from certbg.png
+                backgroundImage: `url(${certBg})`,
+                backgroundSize: '100% 100%',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                boxShadow: '0 0 20px rgba(0,0,0,0.15)',
+                fontFamily: "'Segoe UI', Arial, sans-serif",
+                color: '#000',
+                overflow: 'hidden'
+              }}>
+
+                {/* ── TOP HEADER ── */}
+                <div style={{ position: 'absolute', top: '17%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '100%' }}>
+                  <div style={{ fontSize: '32px', fontWeight: '800', color: '#ffffff', letterSpacing: '0.5px', lineHeight: 1 }}>
+                    ITBEES Global Pvt. Ltd.
                   </div>
-
-                  <div>
-                    <div style={{ fontSize: 'min(1.8vw, 13px)', color: '#777', marginBottom: '5%' }}>
-                      Awarded on: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10%', alignItems: 'flex-end' }}>
-                      <div style={{ width: '30%', textAlign: 'center' }}>
-                        <img src={ceoSign} alt="CEO Signature" style={{ height: '40px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />
-                        <div style={{ borderTop: '1px solid #444', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500' }}>
-                          Authorized Signature
-                        </div>
-                      </div>
-                      <div style={{ width: '30%', textAlign: 'center' }}>
-                        <img src={trainerSign} alt="Trainer Signature" style={{ height: '40px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px' }} />
-                        <div style={{ borderTop: '1px solid #444', paddingTop: '6px', fontSize: 'min(1.8vw, 12px)', color: '#555', fontWeight: '500' }}>
-                          Course Instructor
-                        </div>
-                      </div>
-                    </div>
+                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.9)', marginTop: '2px', letterSpacing: '1px', fontWeight: '500' }}>
+                    Smart Cloud &nbsp;|&nbsp; BI Analytics &nbsp;|&nbsp; ERP Solutions
                   </div>
                 </div>
+
+                {/* ── SUBTITLE ── */}
+                <div style={{ position: 'absolute', top: '37%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '100%' }}>
+                  <div style={{ fontSize: '18px', color: '#333' }}>
+                    This is to certify that
+                  </div>
+                </div>
+
+                {/* ── DYNAMIC TRAINEE NAME ── */}
+                <div style={{ position: 'absolute', top: '39.5%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '60%' }}>
+                  <div style={{ fontSize: '26px', fontWeight: '700', color: '#0b2a6b', letterSpacing: '1px' }}>
+                    {previewing.name}
+                  </div>
+                </div>
+
+                {/* ── COURSE INFO ── */}
+                <div style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '80%' }}>
+                  <div style={{ fontSize: '16px', color: '#333' }}>
+                    has successfully completed the <span style={{ color: '#0b2a6b', fontWeight: '700' }}>professional training program</span> in
+                  </div>
+                </div>
+
+                {/* ── DYNAMIC COURSE NAME ── */}
+                <div style={{ position: 'absolute', top: '48.5%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '50%' }}>
+                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#0b2a6b' }}>
+                    {courseName}
+                  </div>
+                </div>
+
+                {/* ── CONDUCTED BY ── */}
+                <div style={{ position: 'absolute', top: '54.5%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '100%' }}>
+                  <div style={{ fontSize: '16px', color: '#333' }}>
+                    conducted by <strong style={{ color: '#0b2a6b' }}>ITBEES Global Pvt. Ltd.</strong>
+                  </div>
+                </div>
+
+                {/* ── DESCRIPTION ── */}
+                <div style={{ position: 'absolute', top: '59.5%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '80%', lineHeight: '1.7' }}>
+                  <div style={{ fontSize: '11.5px', color: '#333' }}>
+                    The training was designed with an industry-oriented curriculum, covering practical applications, real-time scenarios, and hands-on exercises in Business Intelligence, Data Analytics and related technologies.<br />
+                    The participant has demonstrated <strong style={{ color: '#0b2a6b' }}>commitment, proficiency</strong>, and <strong style={{ color: '#0b2a6b' }}>practical</strong> understanding during the course tenure.
+                  </div>
+                </div>
+
+                {/* ── QR CODE (Production link) ── */}
+                <div style={{ position: 'absolute', bottom: '14%', left: '11%', padding: '0' }}>
+                  <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=https://www.itbeesglobal.com/courses&color=000000&bgcolor=ffffff&margin=0"
+                    alt="QR Code"
+                    style={{ width: '85px', height: '85px', display: 'block', borderRadius: '4px' }}
+                  />
+                </div>
+
+                {/* ── LEFT BOX (Course Details) ── */}
+                <div style={{ position: 'absolute', bottom: '14.5%', left: '20.5%', width: '25%' }}>
+                  <div style={{ fontWeight: '800', fontSize: '12px', color: '#0b2a6b', marginBottom: '6px' }}>Course Details</div>
+                  <ul style={{ listStyle: 'disc', paddingLeft: '14px', margin: 0, fontSize: '10.5px', color: '#333', lineHeight: '1.8' }}>
+                    <li>Course Duration: <strong>{durationLabel}</strong></li>
+                    <li>Mode: <strong>Live Practical Training</strong></li>
+                    <li>Completion Date: <strong>{completionDate}</strong></li>
+                  </ul>
+                </div>
+
+                {/* ── RIGHT BOX (Issued By) ── */}
+                <div style={{ position: 'absolute', bottom: '15.5%', left: '59%', width: '22%', textAlign: 'center' }}>
+                  <div style={{ fontSize: '12px', color: '#555', marginBottom: '6px' }}>Issued By</div>
+                  <div style={{ fontSize: '15px', fontWeight: '800', color: '#0b2a6b', marginBottom: '4px' }}>ITBEES Global Pvt. Ltd.</div>
+                  <div style={{ fontSize: '10.5px', color: '#666', lineHeight: '1.4' }}>Smart Cloud | BI Analytics | ERP Solutions</div>
+                </div>
+
+                {/* ── BOTTOM SIGS & VERIFY ── */}
+                <div style={{ position: 'absolute', bottom: '5%', left: '16%', transform: 'translateX(-50%)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11.5px', color: '#0b2a6b', fontWeight: '700' }}>Verify at: www.itbeesglobal.com</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: '5%', left: '44.5%', transform: 'translateX(-50%)', textAlign: 'center', width: '180px', height: '50px' }}>
+                  <div style={{ position: 'absolute', bottom: '14px', width: '100%' }}>
+                    <img src={ceoSign} alt="Sign" style={{ height: '30px', objectFit: 'contain', margin: '0 auto 2px', display: 'block' }} />
+                    <div style={{ borderTop: '1px solid #888', width: '100%' }}></div>
+                  </div>
+                  <div style={{ position: 'absolute', bottom: '0', width: '100%', fontSize: '11px', fontWeight: '600', color: '#333' }}>Authorized Signatory</div>
+                </div>
+                <div style={{ position: 'absolute', bottom: '5%', left: '74.5%', transform: 'translateX(-50%)', textAlign: 'center', width: '180px', height: '50px' }}>
+                  <div style={{ position: 'absolute', bottom: '14px', width: '100%' }}>
+                    <img src={trainerSign} alt="Sign" style={{ height: '30px', objectFit: 'contain', margin: '0 auto 2px', display: 'block' }} />
+                    <div style={{ borderTop: '1px solid #888', width: '100%' }}></div>
+                  </div>
+                  <div style={{ position: 'absolute', bottom: '0', width: '100%', fontSize: '11px', fontWeight: '600', color: '#333' }}>Training Head</div>
+                </div>
+
+                {/* ── BOTTOM BLUE BAR ── */}
+                <div style={{ position: 'absolute', bottom: '2%', left: '0', right: '0', textAlign: 'center', color: '#fff', fontSize: '13px' }}>
+                  <strong>Certificate ID: {certId}</strong> <span style={{ opacity: 0.8, fontSize: '11px', marginLeft: '8px' }}>(For verification & records)</span>
+                </div>
+
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Toast notification */}
       {toast && (
@@ -440,3 +495,14 @@ export default function Certifications() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
