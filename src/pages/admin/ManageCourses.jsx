@@ -73,6 +73,23 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
     return `ITBE${yy}${mm}${dd}${String(seq).padStart(2, '0')}`;
   };
 
+  const [addTraineeOpen, setAddTraineeOpen] = useState(false);
+  const [traineeForm, setTraineeForm] = useState({ name: '', email: '', phone: '', courseId: '', address: '', city: '', state: '', pincode: '', country: 'india' });
+  const [traineeSubmitting, setTraineeSubmitting] = useState(false);
+
+  const handleAddTrainee = async (e) => {
+    e.preventDefault();
+    setTraineeSubmitting(true);
+    try {
+      const res = await adminApi.addTrainee(traineeForm);
+      setTrainees(prev => [res.data, ...prev]);
+      setAddTraineeOpen(false);
+      setTraineeForm({ name: '', email: '', phone: '', courseId: '', address: '', city: '', state: '', pincode: '', country: 'india' });
+      triggerToast('Trainee added successfully.');
+    } catch (err) { alert(err.message); }
+    finally { setTraineeSubmitting(false); }
+  };
+
   const [selectedTrainees, setSelectedTrainees] = useState([]);
 
   const toggleTrainee = (id) => setSelectedTrainees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -367,6 +384,10 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
                 Delete ({selectedTrainees.length})
               </button>
             )}
+            <button onClick={() => setAddTraineeOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: 'none', background: 'var(--color-corporate-blue)', color: '#fff', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+              + Add Trainee
+            </button>
             <button onClick={() => exportData(filteredTrainees.map(pay => ({ id: getTraineeId(pay), name: pay.name, email: pay.email, phone: pay.phone, course: courses.find(c => c.id === pay.courseId)?.title || 'Unknown', date: new Date(pay.createdAt || pay.purchasedAt).toLocaleDateString('en-IN') })), 'trainees', 'csv')}
               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: '12px', cursor: 'pointer' }}>
               <FileDown size={13} /> CSV
@@ -495,6 +516,73 @@ export default function ManageCourses({ courses, setCourses, payments = [], trig
                 <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
                   <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={imageUploading || isSaving}>{isSaving ? 'Saving...' : (editingId ? 'Update Course' : 'Publish Course')}</button>
                   <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={handleClear}>Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+      {addTraineeOpen && (
+        <>
+          <div onClick={() => setAddTraineeOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200 }} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '520px', maxHeight: '90vh', background: '#fff', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)', zIndex: 201, display: 'flex', flexDirection: 'column', animation: 'popIn 0.22s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', background: 'var(--color-corporate-blue)', borderRadius: '12px 12px 0 0' }}>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Add Trainee</div>
+              <button onClick={() => setAddTraineeOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', display: 'flex' }}><X size={20} /></button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'var(--color-corporate-blue)' }}>
+              <form onSubmit={handleAddTrainee}>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Course</label>
+                  <select className="input-field" required value={traineeForm.courseId} onChange={e => setTraineeForm(p => ({ ...p, courseId: e.target.value }))}>
+                    <option value="">Select a course</option>
+                    {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Full Name</label>
+                  <input className="input-field" required placeholder="Anil Kumar" value={traineeForm.name} onChange={e => setTraineeForm(p => ({ ...p, name: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Email Address</label>
+                  <input type="email" className="input-field" required placeholder="anil@example.com" value={traineeForm.email} onChange={e => setTraineeForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Phone Number</label>
+                  <input type="tel" className="input-field" required placeholder="+91 98765 43210" value={traineeForm.phone} onChange={e => setTraineeForm(p => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Country</label>
+                  <select className="input-field" value={traineeForm.country} onChange={e => setTraineeForm(p => ({ ...p, country: e.target.value, state: '', pincode: '' }))}>
+                    <option value="india">India</option>
+                    <option value="other">Other Country</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Address</label>
+                  <input className="input-field" placeholder="House No, Street, Area" value={traineeForm.address} onChange={e => setTraineeForm(p => ({ ...p, address: e.target.value }))} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>City</label>
+                    <input className="input-field" placeholder="Hyderabad" value={traineeForm.city} onChange={e => setTraineeForm(p => ({ ...p, city: e.target.value }))} />
+                  </div>
+                  {traineeForm.country === 'india' && (
+                    <div className="form-group">
+                      <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>State</label>
+                      <input className="input-field" placeholder="Telangana" value={traineeForm.state} onChange={e => setTraineeForm(p => ({ ...p, state: e.target.value }))} />
+                    </div>
+                  )}
+                </div>
+                {traineeForm.country === 'india' && (
+                  <div className="form-group">
+                    <label className="form-label" style={{ color: 'rgba(255,255,255,0.8)' }}>Pincode</label>
+                    <input className="input-field" placeholder="500032" maxLength="6" value={traineeForm.pincode} onChange={e => setTraineeForm(p => ({ ...p, pincode: e.target.value }))} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                  <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={traineeSubmitting}>{traineeSubmitting ? 'Adding...' : 'Add Trainee'}</button>
+                  <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setAddTraineeOpen(false)}>Cancel</button>
                 </div>
               </form>
             </div>

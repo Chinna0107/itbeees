@@ -15,6 +15,7 @@ export default function Careers({ jobs }) {
     const YT_ID = 'tBkfxgwX_IY';
 
     const filteredJobs = jobs.filter(job => {
+        if (job.isAvailable === false) return false;
         const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesDept = selectedDept === 'All' || job.department === selectedDept;

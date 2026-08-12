@@ -15,6 +15,8 @@ export default function Certifications() {
   const [error, setError] = useState(null);
   const [sending, setSending] = useState(null);
   const [previewing, setPreviewing] = useState(null);
+  const [selected, setSelected] = useState([]);
+  const [bulkSending, setBulkSending] = useState(false);
 
   const [activeFilters, setActiveFilters] = useState({
     name: false,
@@ -64,10 +66,7 @@ export default function Certifications() {
     try {
       const res = await adminApi.sendCertificate(pay.id);
       const newCert = res?.data || { purchaseId: pay.id, sentAt: new Date().toISOString() };
-      setSentCerts(prev => {
-        const filtered = prev.filter(c => c.purchaseId !== newCert.purchaseId);
-        return [...filtered, newCert];
-      });
+      setSentCerts(prev => [...prev.filter(c => c.purchaseId !== newCert.purchaseId), newCert]);
       showToast(`Certificate sent to ${pay.email} successfully!`, 'success');
     } catch (err) {
       showToast(`Failed to send certificate to ${pay.email}: ${err.message}`, 'error');
@@ -75,6 +74,33 @@ export default function Certifications() {
       setSending(null);
     }
   };
+
+  const handleBulkSend = async () => {
+    if (!selected.length) return;
+    const targets = filteredTrainees.filter(p => selected.includes(p.id));
+    if (!window.confirm(`Send certificates to ${targets.length} trainee(s)?`)) return;
+    setBulkSending(true);
+    let successCount = 0, failCount = 0;
+    for (const pay of targets) {
+      try {
+        const res = await adminApi.sendCertificate(pay.id);
+        const newCert = res?.data || { purchaseId: pay.id, sentAt: new Date().toISOString() };
+        setSentCerts(prev => [...prev.filter(c => c.purchaseId !== newCert.purchaseId), newCert]);
+        successCount++;
+      } catch { failCount++; }
+    }
+    setBulkSending(false);
+    setSelected([]);
+    showToast(
+      failCount === 0
+        ? `${successCount} certificate(s) sent successfully!`
+        : `${successCount} sent, ${failCount} failed.`,
+      failCount === 0 ? 'success' : 'error'
+    );
+  };
+
+  const toggleSelect = (id) => setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleSelectAll = () => setSelected(prev => prev.length === filteredTrainees.length ? [] : filteredTrainees.map(p => p.id));
 
   const getCourseName = (pay) => {
     if (pay.course?.title) return pay.course.title;
@@ -193,6 +219,20 @@ export default function Certifications() {
         </h2>
       </div>
 
+      {selected.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', padding: '10px 16px', background: 'rgba(104,239,63,0.08)', border: '1px solid rgba(104,239,63,0.25)', borderRadius: '8px' }}>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)' }}>{selected.length} trainee(s) selected</span>
+          <button
+            onClick={handleBulkSend}
+            disabled={bulkSending}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 16px', borderRadius: '6px', border: 'none', background: 'var(--color-ai-lime)', color: '#1a1a1a', fontSize: '13px', fontWeight: '700', cursor: bulkSending ? 'wait' : 'pointer' }}
+          >
+            <Send size={13} /> {bulkSending ? 'Sending...' : `Send ${selected.length} Certificate(s)`}
+          </button>
+          <button onClick={() => setSelected([])} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+        </div>
+      )}
+
       <div className="admin-table-container">
         {loading && (
           <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>
@@ -213,9 +253,13 @@ export default function Certifications() {
           <table className="admin-table">
             <thead>
               <tr>
+                <th style={{ width: '36px' }}>
+                  <input type="checkbox" checked={filteredTrainees.length > 0 && selected.length === filteredTrainees.length} onChange={toggleSelectAll} />
+                </th>
                 {renderFilterHeader('name', 'Name', 'Filter Name...')}
                 {renderFilterHeader('course', 'Course', 'Filter Course...')}
                 {renderFilterHeader('email', 'Email', 'Filter Email...')}
+                <th>Start Date</th>
                 <th>Sent Date</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -228,9 +272,13 @@ export default function Certifications() {
                 const isSending = sending === pay.id;
                 return (
                   <tr key={pay.id}>
+                    <td><input type="checkbox" checked={selected.includes(pay.id)} onChange={() => toggleSelect(pay.id)} /></td>
                     <td><strong>{pay.name}</strong></td>
                     <td>{getCourseName(pay)}</td>
                     <td style={{ fontSize: '12px' }}>{pay.email}</td>
+                    <td style={{ fontSize: '12px' }}>
+                      {pay.createdAt ? new Date(pay.createdAt).toLocaleDateString('en-IN') : <span style={{ color: 'rgba(255,255,255,0.3)' }}>--</span>}
+                    </td>
                     <td style={{ fontSize: '12px' }}>
                       {sentDate ? sentDate.toLocaleDateString('en-IN') : <span style={{ color: 'rgba(255,255,255,0.3)' }}>--</span>}
                     </td>
@@ -265,7 +313,7 @@ export default function Certifications() {
               })}
               {filteredTrainees.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>
                     No certification records found. Trainees with successful payments will appear here.
                   </td>
                 </tr>
@@ -280,7 +328,18 @@ export default function Certifications() {
         const courseName = getCourseName(previewing);
         const today = new Date();
         const completionDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-        const certId = `ITB/DA/${String(today.getFullYear())}`;
+        const dateObj = new Date(previewing.createdAt || previewing.purchasedAt || today);
+        const yy = String(dateObj.getFullYear()).slice(-2);
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        const sameDay = trainees
+          .filter(p => {
+            const d = new Date(p.createdAt || p.purchasedAt);
+            return d.getDate() === dateObj.getDate() && d.getMonth() === dateObj.getMonth() && d.getFullYear() === dateObj.getFullYear();
+          })
+          .sort((a, b) => new Date(a.createdAt || a.purchasedAt) - new Date(b.createdAt || b.purchasedAt));
+        const seq = String((sameDay.findIndex(p => p.id === previewing.id) + 1) || 1).padStart(2, '0');
+        const certId = `ITBE${yy}${mm}${dd}${seq}`;
         const courseHours = previewing.course?.hours || previewing.hours || '';
         const courseDuration = previewing.course?.duration || previewing.duration || '';
         const durationLabel = courseHours && courseDuration

@@ -214,6 +214,14 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
     }
   };
 
+  const handleToggleAvailability = async (job) => {
+    try {
+      const { data } = await adminApi.toggleJobAvailability(job.id);
+      setJobs(prev => prev.map(j => j.id === job.id ? data : j));
+      triggerToast(`"${job.title}" is now ${data.isAvailable ? 'visible' : 'hidden'} on Careers page.`);
+    } catch (err) { alert(err.message); }
+  };
+
   const handleRemoveJob = async (id) => {
     if (!window.confirm('Archive this job opening?')) return;
     try {
@@ -255,7 +263,7 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
       {jobSubTab === 'postings' && (
         <div className="admin-table-container">
           <table className="admin-table">
-            <thead><tr><th>Title</th><th>Department</th><th>Location</th><th>Type</th><th>Salary</th><th>Added</th><th>Action</th></tr></thead>
+            <thead><tr><th>Title</th><th>Department</th><th>Location</th><th>Type</th><th>Salary</th><th>Available</th><th>Added</th><th>Action</th></tr></thead>
             <tbody>
               {jobs.map(job => (
                 <tr key={job.id} style={{ background: editingJobId === job.id ? 'rgba(35,149,238,0.08)' : undefined }}>
@@ -264,6 +272,21 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
                   <td>{job.location}</td>
                   <td>{job.type}</td>
                   <td style={{ fontWeight: '700', color: 'var(--color-sky-blue)' }}>{job.salary}</td>
+                  <td>
+                    <div
+                      onClick={() => handleToggleAvailability(job)}
+                      title={job.isAvailable !== false ? 'Click to hide from Careers' : 'Click to show on Careers'}
+                      style={{
+                        width: '40px', height: '22px', borderRadius: '11px', cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
+                        background: job.isAvailable !== false ? 'var(--color-ai-lime)' : 'rgba(255,255,255,0.15)'
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
+                        left: job.isAvailable !== false ? '21px' : '3px', boxShadow: '0 1px 4px rgba(0,0,0,0.3)'
+                      }} />
+                    </div>
+                  </td>
                   <td style={{ fontSize: '12px' }}>{new Date(job.createdAt).toLocaleDateString('en-IN')}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -273,7 +296,7 @@ export default function ManageJobs({ jobs, setJobs, applications, setApplication
                   </td>
                 </tr>
               ))}
-              {jobs.length === 0 && <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No jobs yet. Click › Add Job to get started.</td></tr>}
+              {jobs.length === 0 && <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.3)' }}>No jobs yet. Click › Add Job to get started.</td></tr>}
             </tbody>
           </table>
         </div>

@@ -127,6 +127,7 @@ export const adminApi = {
   // Jobs
   createJob: (data) => apiFetch('/admin/jobs', { method: 'POST', body: JSON.stringify(data) }),
   updateJob: (id, data) => apiFetch(`/admin/jobs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleJobAvailability: (id) => apiFetch(`/admin/jobs/${id}/availability`, { method: 'PATCH' }),
   deleteJob: (id) => apiFetch(`/admin/jobs/${id}`, { method: 'DELETE' }),
 
   // Management
@@ -140,6 +141,7 @@ export const adminApi = {
   deletePurchase: (id) => apiFetch(`/admin/purchases/${id}`, { method: 'DELETE' }),
   downloadInvoice: (purchaseId) => `${API_URL}/admin/purchases/${purchaseId}/invoice`,
   getTrainees: () => apiFetch('/admin/trainees'),
+  addTrainee: (data) => apiFetch('/admin/trainees', { method: 'POST', body: JSON.stringify(data) }),
   deleteTrainee: (id) => apiFetch(`/admin/trainees/${id}`, { method: 'DELETE' }),
   getSentCertificates: () => apiFetch('/admin/certificates'),
   sendCertificate: (purchaseId) => apiFetch(`/admin/certificates/send/${purchaseId}`, { method: 'POST' }),
